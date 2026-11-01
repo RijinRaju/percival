@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
-from fastapi import APIRouter, FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, FastAPI, Request
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from percival_server import __version__
-from percival_server.api import accounts, auth, setup
+from percival_server.api import accounts, auth, cluster, history, schedules, setup
 from percival_server.api.auth import LoginLimits
+from percival_server.auth.deps import Principal, require_user
 from percival_server.config import ServerConfig
 from percival_server.connections import Connections, NotConfigured, RedisFactory
 from percival_server.consumer import EventConsumer
@@ -56,7 +59,19 @@ def create_app(
     api.include_router(setup.router)
     api.include_router(auth.router)
     api.include_router(accounts.router)
+    api.include_router(schedules.router)
+    api.include_router(history.router)
+    api.include_router(cluster.router)
     app.include_router(api)
+
+    # api docs, for logged-in users only (the schema lists every endpoint)
+    @app.get("/api/openapi.json", include_in_schema=False)
+    def openapi(_: Principal = Depends(require_user)) -> dict[str, Any]:
+        return app.openapi()
+
+    @app.get("/api/docs", include_in_schema=False)
+    def docs(_: Principal = Depends(require_user)) -> HTMLResponse:
+        return get_swagger_ui_html(openapi_url="/api/openapi.json", title="Percival API")
 
     @app.exception_handler(NotConfigured)
     def _not_configured(request: Request, exc: NotConfigured) -> JSONResponse:
