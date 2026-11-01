@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import APIRouter, FastAPI, Request
 from fastapi.responses import JSONResponse
 
@@ -8,6 +11,7 @@ from percival_server.api import accounts, auth, setup
 from percival_server.api.auth import LoginLimits
 from percival_server.config import ServerConfig
 from percival_server.connections import Connections, NotConfigured, RedisFactory
+from percival_server.consumer import EventConsumer
 from percival_server.crypto import SecretBox
 from percival_server.db import make_engine, make_sessionmaker, migrate
 
@@ -17,7 +21,18 @@ def create_app(
 ) -> FastAPI:
     config = config or ServerConfig.from_env()
 
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        consumer = None
+        if config.run_consumer:
+            consumer = EventConsumer(app.state.connections, app.state.sessionmaker)
+            consumer.start()
+        yield
+        if consumer:
+            consumer.stop()
+
     app = FastAPI(
+        lifespan=lifespan,
         title="Percival",
         version=__version__,
         docs_url=None,
