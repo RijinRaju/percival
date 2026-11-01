@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useSession } from "./session";
+import Shell from "./Shell";
+import Board from "./pages/Board";
 import Login from "./pages/Login";
 import Setup from "./pages/Setup";
 
@@ -16,6 +18,10 @@ function Gate({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+function NotFound() {
+  return <p className="font-mono text-sm text-ink-2">nothing here.</p>;
+}
+
 export default function App() {
   const { status } = useSession();
   return (
@@ -23,13 +29,15 @@ export default function App() {
       <Route path="/setup" element={status === "setup" ? <Setup /> : <Navigate to="/" replace />} />
       <Route path="/login" element={status === "ready" ? <Navigate to="/" replace /> : <Login />} />
       <Route
-        path="*"
         element={
           <Gate>
-            <p className="p-8 font-mono">logged in</p>
+            <Shell />
           </Gate>
         }
-      />
+      >
+        <Route index element={<Board />} />
+        <Route path="*" element={<NotFound />} />
+      </Route>
     </Routes>
   );
 }
