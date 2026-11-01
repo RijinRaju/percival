@@ -4,6 +4,8 @@ import { useSession } from "./session";
 import Shell from "./Shell";
 import Board from "./pages/Board";
 import Login from "./pages/Login";
+import RunDetail from "./pages/RunDetail";
+import Runs from "./pages/Runs";
 import ScheduleDetail from "./pages/ScheduleDetail";
 import ScheduleForm from "./pages/ScheduleForm";
 import Setup from "./pages/Setup";
@@ -41,6 +43,8 @@ export default function App() {
         <Route path="schedules/new" element={<ScheduleForm />} />
         <Route path="schedules/:name" element={<ScheduleDetail />} />
         <Route path="schedules/:name/edit" element={<ScheduleForm />} />
+        <Route path="runs" element={<Runs />} />
+        <Route path="runs/:id" element={<RunDetail />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
