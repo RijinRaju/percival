@@ -4,6 +4,8 @@ import { useSession } from "./session";
 import Shell from "./Shell";
 import Board from "./pages/Board";
 import Login from "./pages/Login";
+import ScheduleDetail from "./pages/ScheduleDetail";
+import ScheduleForm from "./pages/ScheduleForm";
 import Setup from "./pages/Setup";
 
 function Gate({ children }: { children: ReactNode }) {
@@ -36,6 +38,9 @@ export default function App() {
         }
       >
         <Route index element={<Board />} />
+        <Route path="schedules/new" element={<ScheduleForm />} />
+        <Route path="schedules/:name" element={<ScheduleDetail />} />
+        <Route path="schedules/:name/edit" element={<ScheduleForm />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
