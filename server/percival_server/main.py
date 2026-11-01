@@ -17,6 +17,7 @@ from percival_server.connections import Connections, NotConfigured, RedisFactory
 from percival_server.consumer import EventConsumer
 from percival_server.crypto import SecretBox
 from percival_server.db import make_engine, make_sessionmaker, migrate
+from percival_server.spa import mount as mount_ui
 
 
 def create_app(
@@ -81,5 +82,9 @@ def create_app(
     def health() -> dict[str, str]:
         # no auth, so nothing in here that says anything about the setup
         return {"status": "ok", "version": __version__}
+
+    # last, the ui catch-all must not shadow anything above
+    if config.static_dir is not None:
+        mount_ui(app, config.static_dir)
 
     return app

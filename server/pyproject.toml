@@ -40,6 +40,8 @@ path = "percival_server/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["percival_server"]
+# the built ui is gitignored, hatch would skip it without this
+artifacts = ["percival_server/static/**"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
