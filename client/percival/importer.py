@@ -6,6 +6,8 @@ redis is exactly what ``redbeat.RedBeatScheduler`` expects to read.
 One thing to know: RedBeat re-syncs ``beat_schedule`` entries from config
 every time beat starts. If you import and keep the same names in config,
 the config wins on the next restart. Remove them from config after import.
+(Removing them is safe, we take them out of redbeat's statics set so beat
+won't delete them once they disappear from config.)
 """
 
 from __future__ import annotations
@@ -176,7 +178,24 @@ def apply(app: Any, planned: list[Planned]) -> int:
             entry.last_run_at = old.last_run_at
         entry.save()
         written += 1
+
+    _detach_from_statics(app, [p.name for p in planned if p.action != SKIP])
     return written
+
+
+def _detach_from_statics(app: Any, names: list[str]) -> None:
+    """Make imported entries belong to redis rather than to config.
+
+    redbeat remembers which entries came from beat_schedule (the "statics"
+    set) and deletes them on startup once they're gone from config. Without
+    this, following our own advice (import, then remove from config) would
+    wipe the imported schedules the next time beat restarts.
+    """
+    if not names:
+        return
+    from redbeat.schedulers import get_redis
+
+    get_redis(app).srem(app.redbeat_conf.statics_key, *names)
 
 
 def render(planned: list[Planned]) -> str:

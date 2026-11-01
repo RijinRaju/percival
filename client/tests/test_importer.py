@@ -114,3 +114,15 @@ def test_cli_dry_run_and_apply(app, monkeypatch, capsys):
     cli.main(["import", "--app", "fakeproj_celery:app", "--only", "digest", "--apply"])
     assert "wrote 1 entries" in capsys.readouterr().out
     assert load(app, "digest").task == "proj.send_digest"
+
+
+def test_apply_takes_entries_out_of_redbeat_statics(app):
+    # beat already ran once with beat_schedule in config, so redbeat remembers
+    # those names as "statics" and would delete them once they leave config
+    importer.plan(app)
+    statics = app.redbeat_conf.statics_key
+    app.redbeat_redis.sadd(statics, "digest", "cleanup", "ping", "not-ours")
+
+    importer.apply(app, importer.plan(app))
+
+    assert app.redbeat_redis.smembers(statics) == {"not-ours"}
