@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, enc, qs } from "../api";
 import { Confirm } from "../components/Confirm";
 import { RunTable } from "../components/RunTable";
@@ -15,6 +15,8 @@ type Dialog = "run" | "delete" | null;
 export default function ScheduleDetail() {
   const { name = "" } = useParams();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const warning = params.get("warn");
   const now = useNow();
   const { reload: reloadStatus } = useStatus();
   const sched = useApi<Schedule>(`/schedules/${enc(name)}`, { every: 15_000 });
@@ -59,6 +61,9 @@ export default function ScheduleDetail() {
 
       <ErrorLine error={actionError} />
       {notice ? <p className="mb-4 font-mono text-[13px] text-ok">■ {notice}</p> : null}
+      {warning ? (
+        <p className="mb-4 border-l-2 border-hold bg-paper-2 px-3 py-2 font-mono text-[13px] text-hold">◇ saved, but {warning}</p>
+      ) : null}
       {!s.enabled ? (
         <p className="mb-6 border-l-2 border-hold bg-paper-2 px-3 py-2 text-sm">
           <strong className="font-mono text-xs uppercase tracking-widest text-hold">held</strong> Paused, beat will skip it until
