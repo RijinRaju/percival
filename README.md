@@ -4,9 +4,9 @@ A self-hosted control panel for Celery. Change schedules without restarting
 beat or workers, and stop the two things ping monitors can't see: a task
 running twice, and a stale worker running old code.
 
-> Early days. The client library (the part that goes in your Celery app) works
-> and is tested. The panel itself, with its API, UI and MCP server, is being
-> built now. Expect breaking changes until 0.1.
+> Early days. The client library and the panel (API + web UI) work and are
+> tested. The MCP server and the Docker image are next. Expect breaking
+> changes until 0.1.
 
 ## Why I built this
 
@@ -94,11 +94,50 @@ percival import --app proj.celery:app --redis-url redis://localhost:6379/0
 
 This is a dry run that prints what would be created or changed. Add `--apply`
 to write the entries to RedBeat, then run beat with
-`celery beat -S redbeat.RedBeatScheduler`.
+`celery beat -S percival.beat.Scheduler` (see below).
 
 After importing, remove those entries from `beat_schedule`. RedBeat re-syncs
 config entries every time beat starts, so anything left in config will
 overwrite what you change in the panel.
+
+## Running beat
+
+```
+celery -A proj beat -S percival.beat.Scheduler
+```
+
+That's RedBeat with three additions: crontabs follow their own timezone
+(DST included), beat writes a heartbeat so the panel knows it's alive and
+whether your last change was picked up, and it checks for new schedules every
+15 seconds instead of up to every 5 minutes.
+
+Plain `redbeat.RedBeatScheduler` still works with everything the panel
+writes. You just lose the three things above.
+
+## The panel
+
+Docker image is coming. Until then, from a checkout:
+
+```
+cd web && npm ci && npm run build && cd ..
+pip install -e client -e server
+PERCIVAL_SECRET_KEY=$(python -c "import secrets; print(secrets.token_urlsafe(48))")   percival-server
+```
+
+Open http://127.0.0.1:8080. The first visit walks you through creating an
+admin and pointing it at your broker and Redis. Keep the secret key somewhere
+safe: it encrypts the stored connection URLs, and the server refuses to start
+without it unless `PERCIVAL_ENV=development`.
+
+| env | default | |
+|---|---|---|
+| `PERCIVAL_SECRET_KEY` | none | required in production |
+| `PERCIVAL_DATABASE_URL` | SQLite in `./data` | Postgres works too |
+| `PERCIVAL_HOST` / `PERCIVAL_PORT` | `127.0.0.1` / `8080` | |
+| `PERCIVAL_SECURE_COOKIES` | on in production | turn off only for plain http on localhost |
+
+Put it behind a reverse proxy with TLS if anyone besides you will reach it.
+API docs are at `/api/docs` once you're logged in.
 
 ## Configuration
 
@@ -121,8 +160,9 @@ is blocked on that worker. That's on purpose.
 
 - [x] client: events, heartbeat, metadata, version gate, `once_per`
 - [x] `percival import`
-- [ ] server: API, auth, schedules on top of RedBeat, run history, audit log
-- [ ] web UI
+- [x] per-schedule timezones (`percival.beat.Scheduler`)
+- [x] server: API, auth, schedules on top of RedBeat, run history, audit log
+- [x] web UI
 - [ ] MCP server (read-only by default, writes need human approval)
 - [ ] Docker image and a demo compose stack
 
@@ -130,8 +170,12 @@ is blocked on that worker. That's on purpose.
 
 ```
 python -m venv .venv
-.venv/bin/pip install -e "client[dev]"
-cd client && pytest
+.venv/bin/pip install -e "client[dev]" -e "server[dev]"
+(cd client && pytest)
+(cd server && pytest)
+
+# ui with hot reload, proxies /api to a panel on :8080
+cd web && npm ci && npm run dev
 ```
 
 ## License
