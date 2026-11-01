@@ -42,9 +42,8 @@ def test_secret_box_round_trip_and_wrong_key():
         SecretBox("x" * 40).decrypt(token)
 
 
-def test_health_is_public_and_boring(monkeypatch):
-    monkeypatch.setenv("PERCIVAL_SECRET_KEY", KEY)
-    client = TestClient(create_app())
+def test_health_is_public_and_boring(config):
+    client = TestClient(create_app(config))
     resp = client.get("/health")
     assert resp.status_code == 200
     assert set(resp.json()) == {"status", "version"}
