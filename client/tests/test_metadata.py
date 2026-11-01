@@ -11,7 +11,7 @@ from percival.schedules import describe, humanize
 def make_app():
     app = Celery("proj", set_as_current=False)
 
-    @app.task
+    @app.task(shared=False)
     def send_digest(user_id: int, *, dry_run: bool = False):
         """Mail the weekly digest."""
         return user_id

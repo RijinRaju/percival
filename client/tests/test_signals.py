@@ -23,7 +23,7 @@ def read_events(rt):
 
 
 def test_success_run_records_start_and_finish(app, rt):
-    @app.task
+    @app.task(shared=False)
     def add(x, y):
         return x + y
 
@@ -39,7 +39,7 @@ def test_success_run_records_start_and_finish(app, rt):
 
 
 def test_failure_keeps_traceback_and_hides_secrets(app, rt):
-    @app.task
+    @app.task(shared=False)
     def login(username, password):
         raise ValueError("nope")
 
@@ -57,7 +57,7 @@ def test_failure_keeps_traceback_and_hides_secrets(app, rt):
 def test_capture_args_off(app, rt):
     rt.settings = rt.settings.with_(capture_args=False)
 
-    @app.task
+    @app.task(shared=False)
     def ping(x):
         return x
 
@@ -68,7 +68,7 @@ def test_capture_args_off(app, rt):
 def test_connecting_twice_does_not_duplicate(app, rt):
     signals.connect()
 
-    @app.task
+    @app.task(shared=False)
     def noop():
         return None
 
@@ -83,7 +83,7 @@ def test_redis_down_does_not_break_the_task(app, rt):
 
     rt.redis.get = lambda: Broken()
 
-    @app.task
+    @app.task(shared=False)
     def still_works():
         return "ok"
 

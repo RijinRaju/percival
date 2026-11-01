@@ -9,6 +9,7 @@ from celery import signals
 
 from percival import runtime
 from percival.events import Status, build_event, emit
+from percival.gate import required_mismatch
 
 # task id -> start time, only for tasks running in this process
 _started: dict[str, float] = {}
@@ -53,6 +54,10 @@ def on_prerun(
 ) -> None:
     rt = runtime.get_optional()
     if rt is None or task is None:
+        return
+    # the gate is about to refuse this one, it'll report blocked_stale_worker
+    # itself and a "started" right before it would just be confusing
+    if required_mismatch(task.request, rt.settings.code_version) is not None:
         return
     now = time.time()
     if task_id:
