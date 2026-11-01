@@ -1,0 +1,65 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "percival"
+description = "Client hooks for the Percival Celery control panel: run events, worker versions, stale-worker gate, duplicate guard."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "Rijin Raju" }]
+dependencies = [
+    "celery>=5.3",
+    "redis>=4.5",
+]
+dynamic = ["version"]
+classifiers = [
+    "Framework :: Celery",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "fakeredis>=2.20",
+    "celery-redbeat>=2.0",
+    "ruff>=0.5",
+    "mypy>=1.10",
+]
+
+[project.scripts]
+percival = "percival.cli:main"
+
+[project.urls]
+Source = "https://github.com/RijinRaju/percival"
+
+[tool.hatch.version]
+path = "percival/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["percival"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+packages = ["percival"]
+
+[[tool.mypy.overrides]]
+module = ["celery.*", "kombu.*", "redbeat.*"]
+ignore_missing_imports = true
