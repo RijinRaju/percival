@@ -6,7 +6,6 @@ importer. Keep this free of redbeat imports, workers don't need redbeat.
 
 from __future__ import annotations
 
-import copy
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -152,17 +151,22 @@ def next_runs(sched: Any, count: int = 5, now: datetime | None = None) -> list[d
     if not isinstance(sched, BaseSchedule):
         sched = schedule(run_every=sched)
     cursor = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
-    pinned = copy.copy(sched)
     out: list[datetime] = []
-    for _ in range(count):
-        current = cursor
-        pinned.nowfun = lambda current=current: current
-        remaining = pinned.remaining_estimate(current)
-        if remaining is None:
-            break
-        if remaining.total_seconds() <= 0:
-            # an interval reports "due now" against itself, step past it
-            remaining = getattr(pinned, "run_every", None) or timedelta(seconds=1)
-        cursor = (current + remaining).astimezone(timezone.utc)
-        out.append(cursor)
+    # pin the clock on the object itself and put it back after. copying would
+    # be nicer but redbeat's rrule doesn't survive copy.copy
+    original = sched.nowfun
+    try:
+        for _ in range(count):
+            current = cursor
+            sched.nowfun = lambda current=current: current
+            remaining = sched.remaining_estimate(current)
+            if remaining is None:
+                break
+            if remaining.total_seconds() <= 0:
+                # an interval reports "due now" against itself, step past it
+                remaining = getattr(sched, "run_every", None) or timedelta(seconds=1)
+            cursor = (current + remaining).astimezone(timezone.utc)
+            out.append(cursor)
+    finally:
+        sched.nowfun = original
     return out
