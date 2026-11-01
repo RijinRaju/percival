@@ -321,3 +321,24 @@ def test_datetimes_are_utc_iso(client, admin):
     first = client.get("/api/v1/schedules/digest").json()["next_runs"][0]
     assert datetime.fromisoformat(first).tzinfo is not None
     assert datetime.fromisoformat(first).utcoffset() == timezone.utc.utcoffset(None)
+
+
+def test_edit_works_as_the_first_redbeat_call(app, config, redis_server, admin, client):
+    # found running it for real: a fresh process whose first request was a
+    # PATCH crashed because redbeat's config wasn't attached to the app yet
+    client.post("/api/v1/schedules", json=DIGEST)
+    from percival_server.main import create_app
+
+    def factory(url, decode):
+        import fakeredis
+
+        return fakeredis.FakeRedis(server=redis_server, decode_responses=decode)
+
+    fresh = TestClient(create_app(config, redis_factory=factory))
+    csrf = fresh.post(
+        "/api/v1/auth/login", json={"username": "admin", "password": "a-long-enough-password"}
+    ).json()["csrf_token"]
+    resp = fresh.patch(
+        "/api/v1/schedules/digest", json={"notes": "edited"}, headers={"X-CSRF-Token": csrf}
+    )
+    assert resp.status_code == 200, resp.text

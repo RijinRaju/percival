@@ -139,6 +139,11 @@ class Connections:
                 app.conf.redbeat_key_prefix = s.redbeat_key_prefix
                 app.conf.broker_connection_retry_on_startup = False
                 app.redbeat_redis = self.redis_factory(s.redis_url, True)
+                # redbeat attaches its config lazily, and generate_key() blows up
+                # without it if nothing else touched redbeat first
+                from redbeat.schedulers import ensure_conf
+
+                ensure_conf(app)
                 self._celery = app
             return self._celery
 
