@@ -18,6 +18,8 @@ class Headers:
     REQUEUES = f"{NAME}_requeues"
     # where an entry came from: "imported", "ui", "api"
     ORIGIN = f"{NAME}_origin"
+    # IANA zone a crontab should be evaluated in, see percival.beat
+    TIMEZONE = f"{NAME}_timezone"
 
 
 class Keys:
@@ -33,6 +35,10 @@ class Keys:
     @property
     def tasks(self) -> str:
         return f"{self.prefix}:tasks"
+
+    @property
+    def beat(self) -> str:
+        return f"{self.prefix}:beat"
 
     @property
     def beat_schedule(self) -> str:

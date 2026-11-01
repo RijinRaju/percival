@@ -6,20 +6,93 @@ importer. Keep this free of redbeat imports, workers don't need redbeat.
 
 from __future__ import annotations
 
-from datetime import timedelta
+import copy
+from datetime import datetime, timedelta, timezone
 from typing import Any
+from zoneinfo import ZoneInfo
 
-from celery.schedules import crontab, schedule, solar
+from celery.schedules import BaseSchedule, crontab, schedule, solar
 
 CRON_FIELDS = ("minute", "hour", "day_of_week", "day_of_month", "month_of_year")
 
 
+# lowercase like celery's own schedule classes
+class zoned_crontab(crontab):  # type: ignore[misc]
+    """A crontab evaluated in its own timezone instead of the app's.
+
+    Stock celery takes the zone from ``app.timezone``, and RedBeat doesn't
+    store one at all, so this is how per-schedule timezones work. DST is
+    handled as wall clock time: "9:00 Europe/London" stays 9:00 local.
+    """
+
+    def __init__(
+        self,
+        minute: Any = "*",
+        hour: Any = "*",
+        day_of_week: Any = "*",
+        day_of_month: Any = "*",
+        month_of_year: Any = "*",
+        *,
+        timezone: str,
+        **kwargs: Any,
+    ) -> None:
+        self.zone_name = timezone
+        self.zone = ZoneInfo(timezone)
+        super().__init__(minute, hour, day_of_week, day_of_month, month_of_year, **kwargs)
+
+    @classmethod
+    def from_crontab(cls, cron: crontab, timezone: str, **kwargs: Any) -> zoned_crontab:
+        return cls(*(getattr(cron, f"_orig_{f}") for f in CRON_FIELDS), timezone=timezone, **kwargs)
+
+    @property
+    def tz(self) -> Any:
+        return self.zone
+
+    @property
+    def utc_enabled(self) -> bool:
+        # makes to_local() leave our aware datetimes alone
+        return True
+
+    def now(self) -> datetime:
+        current = self.nowfun() if self.nowfun else datetime.now(timezone.utc)
+        aware: datetime = self.maybe_make_aware(current)
+        return aware.astimezone(self.zone)
+
+    def remaining_delta(self, last_run_at: datetime, tz: Any = None, ffwd: Any = None) -> Any:
+        # celery compares last_run_at.hour/day against the cron fields as-is,
+        # so it has to be in our zone first, not whatever it was stored in
+        last_run_at = self.maybe_make_aware(last_run_at).astimezone(self.zone)
+        if ffwd is None:
+            return super().remaining_delta(last_run_at, tz)
+        return super().remaining_delta(last_run_at, tz, ffwd)
+
+    def __reduce__(self) -> Any:
+        return (
+            _rebuild_zoned,
+            (*(getattr(self, f"_orig_{f}") for f in CRON_FIELDS), self.zone_name),
+        )
+
+    def __repr__(self) -> str:
+        return f"<zoned_crontab: {humanize(describe(self))} {self.zone_name}>"
+
+
+def _rebuild_zoned(*args: Any) -> zoned_crontab:
+    *fields, zone = args
+    return zoned_crontab(*fields, timezone=zone)
+
+
 def describe(sched: Any) -> dict[str, Any]:
     if isinstance(sched, crontab):
-        return {
+        desc = {
             "type": "crontab",
             **{f: str(getattr(sched, f"_orig_{f}")) for f in CRON_FIELDS},
         }
+        if isinstance(sched, zoned_crontab):
+            desc["timezone"] = sched.zone_name
+        return desc
+    # redbeat's rrule, duck typed so this module doesn't need redbeat
+    if getattr(sched, "count", None) == 1 and getattr(sched, "dtstart", None) is not None:
+        return {"type": "once", "at": sched.dtstart.isoformat()}
     if isinstance(sched, solar):
         return {"type": "solar", "event": sched.event, "lat": sched.lat, "lon": sched.lon}
     if isinstance(sched, schedule):
@@ -37,6 +110,8 @@ def humanize(desc: dict[str, Any]) -> str:
         return "every " + _seconds_to_words(float(desc["every"]))
     if kind == "crontab":
         return " ".join(desc[f] for f in CRON_FIELDS)
+    if kind == "once":
+        return f"once at {desc['at']}"
     if kind == "solar":
         return f"solar {desc['event']} at {desc['lat']},{desc['lon']}"
     return str(desc.get("repr", "?"))
@@ -65,4 +140,29 @@ def describe_beat_schedule(beat_schedule: dict[str, Any]) -> dict[str, dict[str,
             "options": dict(entry.get("options") or {}),
             "relative": bool(entry.get("relative", False)),
         }
+    return out
+
+
+def next_runs(sched: Any, count: int = 5, now: datetime | None = None) -> list[datetime]:
+    """The next ``count`` fire times after ``now``, in UTC.
+
+    Goes through the schedule's own ``remaining_estimate`` with a pinned
+    clock, so the preview uses exactly the maths beat will use.
+    """
+    if not isinstance(sched, BaseSchedule):
+        sched = schedule(run_every=sched)
+    cursor = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    pinned = copy.copy(sched)
+    out: list[datetime] = []
+    for _ in range(count):
+        current = cursor
+        pinned.nowfun = lambda current=current: current
+        remaining = pinned.remaining_estimate(current)
+        if remaining is None:
+            break
+        if remaining.total_seconds() <= 0:
+            # an interval reports "due now" against itself, step past it
+            remaining = getattr(pinned, "run_every", None) or timedelta(seconds=1)
+        cursor = (current + remaining).astimezone(timezone.utc)
+        out.append(cursor)
     return out
