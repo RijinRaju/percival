@@ -15,7 +15,6 @@ CRON_FIELDS = ("minute", "hour", "day_of_week", "day_of_month", "month_of_year")
 
 
 def describe(sched: Any) -> dict[str, Any]:
-    # crontab and solar are subclasses of schedule, so check them first
     if isinstance(sched, crontab):
         return {
             "type": "crontab",

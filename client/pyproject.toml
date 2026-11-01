@@ -25,6 +25,8 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+# only needed for `percival import`, workers don't need redbeat
+import = ["celery-redbeat>=2.0"]
 dev = [
     "pytest>=8",
     "fakeredis>=2.20",

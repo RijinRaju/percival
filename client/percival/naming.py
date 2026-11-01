@@ -16,6 +16,8 @@ class Headers:
     REQUIRED_VERSION = f"{NAME}_required_version"
     SCHEDULE = f"{NAME}_schedule"
     REQUEUES = f"{NAME}_requeues"
+    # where an entry came from: "imported", "ui", "api"
+    ORIGIN = f"{NAME}_origin"
 
 
 class Keys:
