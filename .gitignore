@@ -16,6 +16,7 @@ htmlcov/
 # node
 node_modules/
 web/dist/
+*.tsbuildinfo
 
 # local stuff
 .env
@@ -24,3 +25,6 @@ web/dist/
 .idea/
 .vscode/
 .DS_Store
+
+# built ui, produced by `npm run build` in web/ (and by the docker build)
+server/percival_server/static/

@@ -1,0 +1,126 @@
+@import "tailwindcss";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+
+/*
+  The look: a dispatch office timetable, not a SaaS dashboard.
+  Paper and ink, hairline rules, square corners, one signal colour that is
+  only ever used for things that need a human (stale workers, failures).
+*/
+
+:root {
+  --paper: #f3f0e8;
+  --paper-2: #ebe7dc;
+  --ink: #1b1a17;
+  --ink-2: #66625a;
+  --ink-3: #8f8a7e;
+  --rule: #d6d0c2;
+  --signal: #c23b16;
+  --signal-wash: #f6dfd3;
+  --ok: #2c6a3d;
+  --hold: #8a6200;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #14130f;
+    --paper-2: #1d1b16;
+    --ink: #ebe6d9;
+    --ink-2: #a39d8e;
+    --ink-3: #6f6a5e;
+    --rule: #34312a;
+    --signal: #ff6b3d;
+    --signal-wash: #3a1c10;
+    --ok: #86c495;
+    --hold: #e0b34d;
+  }
+}
+
+@theme inline {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-signal: var(--signal);
+  --color-signal-wash: var(--signal-wash);
+  --color-ok: var(--ok);
+  --color-hold: var(--hold);
+}
+
+html {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: var(--paper);
+  margin: 0;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* numbers line up in every table */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* small caps labels, like the column headings on a printed form */
+.label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+/* highlight.js, toned down to the same palette */
+.hljs-keyword,
+.hljs-built_in {
+  color: var(--signal);
+}
+.hljs-string {
+  color: var(--ok);
+}
+.hljs-comment {
+  color: var(--ink-3);
+  font-style: italic;
+}
+.hljs-title,
+.hljs-title.function_ {
+  font-weight: 600;
+}
+.hljs-number,
+.hljs-literal {
+  color: var(--hold);
+}
