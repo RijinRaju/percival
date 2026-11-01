@@ -2,12 +2,15 @@ import type { ReactNode } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useSession } from "./session";
 import Shell from "./Shell";
+import Audit from "./pages/Audit";
 import Board from "./pages/Board";
+import Import from "./pages/Import";
 import Login from "./pages/Login";
 import RunDetail from "./pages/RunDetail";
 import Runs from "./pages/Runs";
 import ScheduleDetail from "./pages/ScheduleDetail";
 import ScheduleForm from "./pages/ScheduleForm";
+import Settings from "./pages/Settings";
 import Setup from "./pages/Setup";
 import TaskDetail from "./pages/TaskDetail";
 import Tasks from "./pages/Tasks";
@@ -51,6 +54,9 @@ export default function App() {
         <Route path="tasks" element={<Tasks />} />
         <Route path="tasks/:name" element={<TaskDetail />} />
         <Route path="workers" element={<Workers />} />
+        <Route path="import" element={<Import />} />
+        <Route path="audit" element={<Audit />} />
+        <Route path="settings" element={<Settings />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
