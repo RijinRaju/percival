@@ -9,6 +9,9 @@ import Runs from "./pages/Runs";
 import ScheduleDetail from "./pages/ScheduleDetail";
 import ScheduleForm from "./pages/ScheduleForm";
 import Setup from "./pages/Setup";
+import TaskDetail from "./pages/TaskDetail";
+import Tasks from "./pages/Tasks";
+import Workers from "./pages/Workers";
 
 function Gate({ children }: { children: ReactNode }) {
   const { status } = useSession();
@@ -45,6 +48,9 @@ export default function App() {
         <Route path="schedules/:name/edit" element={<ScheduleForm />} />
         <Route path="runs" element={<Runs />} />
         <Route path="runs/:id" element={<RunDetail />} />
+        <Route path="tasks" element={<Tasks />} />
+        <Route path="tasks/:name" element={<TaskDetail />} />
+        <Route path="workers" element={<Workers />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

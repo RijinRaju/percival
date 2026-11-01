@@ -47,7 +47,6 @@ export default function Runs() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterKey]);
 
   function update(key: string, value: string | string[]) {

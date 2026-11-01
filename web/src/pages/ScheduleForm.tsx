@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, enc } from "../api";
 import { clock, day, short } from "../format";
 import { useApi } from "../hooks";
@@ -133,13 +133,14 @@ export default function ScheduleForm() {
   const [params] = useSearchParams();
   const copyFrom = params.get("from");
   const navigate = useNavigate();
+  const location = useLocation();
   const { status } = useStatus();
   const tasks = useApi<TaskRow[]>("/tasks");
   const source = useApi<Schedule>(editing || copyFrom ? `/schedules/${enc((editing ?? copyFrom)!)}` : null);
 
   const [form, setForm] = useState<FormState>({
     name: "",
-    task: "",
+    task: (location.state as { task?: string } | null)?.task ?? "",
     kind: "crontab",
     cron: PRESETS[2][1],
     every: 5,
