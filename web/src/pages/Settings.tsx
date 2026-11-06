@@ -41,20 +41,27 @@ function Connections() {
 
   if (error) return <ErrorLine error={error} />;
   if (!data) return null;
+  const locked = data.from_env;
   return (
     <form onSubmit={save} className="max-w-xl space-y-4">
-      <Field label="Broker URL" hint={`now: ${data.broker_url} · leave blank to keep`}>
-        <Input value={draft.broker_url ?? ""} onChange={(e) => setDraft({ ...draft, broker_url: e.target.value || undefined })} />
+      {locked ? (
+        <p className="border-l-2 border-hold bg-paper-2 px-3 py-2 text-sm">
+          Broker, redis and prefixes come from <code className="font-mono">PERCIVAL_*</code> environment variables. Change
+          them there and restart the panel.
+        </p>
+      ) : null}
+      <Field label="Broker URL" hint={locked ? `from env: ${data.broker_url}` : `now: ${data.broker_url} · leave blank to keep`}>
+        <Input disabled={locked} value={draft.broker_url ?? ""} onChange={(e) => setDraft({ ...draft, broker_url: e.target.value || undefined })} />
       </Field>
-      <Field label="Redis URL" hint={`now: ${data.redis_url} · leave blank to keep`}>
-        <Input value={draft.redis_url ?? ""} onChange={(e) => setDraft({ ...draft, redis_url: e.target.value || undefined })} />
+      <Field label="Redis URL" hint={locked ? `from env: ${data.redis_url}` : `now: ${data.redis_url} · leave blank to keep`}>
+        <Input disabled={locked} value={draft.redis_url ?? ""} onChange={(e) => setDraft({ ...draft, redis_url: e.target.value || undefined })} />
       </Field>
       <div className="grid gap-4 sm:grid-cols-3">
         <Field label="RedBeat prefix">
-          <Input value={draft.redbeat_key_prefix ?? data.redbeat_key_prefix} onChange={(e) => setDraft({ ...draft, redbeat_key_prefix: e.target.value })} />
+          <Input disabled={locked} value={draft.redbeat_key_prefix ?? data.redbeat_key_prefix} onChange={(e) => setDraft({ ...draft, redbeat_key_prefix: e.target.value })} />
         </Field>
         <Field label="Percival prefix" hint="key_prefix in percival.init()">
-          <Input value={draft.key_prefix ?? data.key_prefix} onChange={(e) => setDraft({ ...draft, key_prefix: e.target.value })} />
+          <Input disabled={locked} value={draft.key_prefix ?? data.key_prefix} onChange={(e) => setDraft({ ...draft, key_prefix: e.target.value })} />
         </Field>
         <Field label="Keep runs (days)">
           <Input

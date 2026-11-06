@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api";
+import { useApi } from "../hooks";
 import { useSession } from "../session";
 import type { Me } from "../types";
 import { Button, ErrorLine, Field, Input } from "../ui";
@@ -51,6 +52,7 @@ function TestButton({ kind, url, result, onResult }: {
 export default function Setup() {
   const { signedIn } = useSession();
   const navigate = useNavigate();
+  const fromEnv = useApi<{ connections_from_env: boolean }>("/setup").data?.connections_from_env ?? false;
   const [form, setForm] = useState({
     username: "admin",
     password: "",
@@ -75,7 +77,8 @@ export default function Setup() {
     setBusy(true);
     setError(null);
     try {
-      const { confirm: _, ...body } = form;
+      const { confirm: _, ...all } = form;
+      const body = fromEnv ? { username: all.username, password: all.password } : all;
       const res = await api.post<{ username: string; csrf_token: string }>("/setup", body);
       const me: Me = { username: res.username, kind: "user", csrf_token: res.csrf_token, scopes: ["read", "write"] };
       signedIn(me);
@@ -92,8 +95,14 @@ export default function Setup() {
       <Wordmark />
       <h1 className="mt-10 text-3xl font-semibold tracking-tight">First run</h1>
       <p className="mt-2 max-w-xl text-ink-2">
-        Three things and you're in. Connection URLs are stored encrypted with your{" "}
-        <code className="font-mono text-[13px]">PERCIVAL_SECRET_KEY</code>.
+        {fromEnv ? (
+          <>Broker and redis came from environment variables, so all that's left is an admin account.</>
+        ) : (
+          <>
+            Three things and you're in. Connection URLs are stored encrypted with your{" "}
+            <code className="font-mono text-[13px]">PERCIVAL_SECRET_KEY</code>.
+          </>
+        )}
       </p>
 
       <form onSubmit={submit} className="mt-8">
@@ -111,25 +120,29 @@ export default function Setup() {
           </div>
         </Section>
 
-        <Section n="02" title="Broker">
-          <Field label="Broker URL" hint="the same one your workers use. redis:// or amqp://">
-            <Input value={form.broker_url} onChange={(e) => { set("broker_url")(e); setBrokerTest(null); }} required />
-          </Field>
-          <TestButton kind="broker" url={form.broker_url} result={brokerTest} onResult={setBrokerTest} />
-        </Section>
+        {fromEnv ? null : (
+          <>
+            <Section n="02" title="Broker">
+              <Field label="Broker URL" hint="the same one your workers use. redis:// or amqp://">
+                <Input value={form.broker_url} onChange={(e) => { set("broker_url")(e); setBrokerTest(null); }} required />
+              </Field>
+              <TestButton kind="broker" url={form.broker_url} result={brokerTest} onResult={setBrokerTest} />
+            </Section>
 
-        <Section n="03" title="Schedule store">
-          <Field
-            label="Redis URL"
-            hint="where RedBeat keeps schedules and where percival.init() writes events. can be the broker if that's redis"
-          >
-            <Input value={form.redis_url} onChange={(e) => { set("redis_url")(e); setRedisTest(null); }} required />
-          </Field>
-          <TestButton kind="redis" url={form.redis_url} result={redisTest} onResult={setRedisTest} />
-          <Field label="RedBeat key prefix" hint="only change this if you set redbeat_key_prefix in your celery config">
-            <Input value={form.redbeat_key_prefix} onChange={set("redbeat_key_prefix")} className="max-w-xs" />
-          </Field>
-        </Section>
+            <Section n="03" title="Schedule store">
+              <Field
+                label="Redis URL"
+                hint="where RedBeat keeps schedules and where percival.init() writes events. can be the broker if that's redis"
+              >
+                <Input value={form.redis_url} onChange={(e) => { set("redis_url")(e); setRedisTest(null); }} required />
+              </Field>
+              <TestButton kind="redis" url={form.redis_url} result={redisTest} onResult={setRedisTest} />
+              <Field label="RedBeat key prefix" hint="only change this if you set redbeat_key_prefix in your celery config">
+                <Input value={form.redbeat_key_prefix} onChange={set("redbeat_key_prefix")} className="max-w-xs" />
+              </Field>
+            </Section>
+          </>
+        )}
 
         <div className="border-t border-ink pt-6">
           <ErrorLine error={error} />

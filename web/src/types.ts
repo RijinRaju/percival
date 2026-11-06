@@ -170,4 +170,6 @@ export type ConnectionSettings = {
   redbeat_key_prefix: string;
   key_prefix: string;
   retention_days: number;
+  // broker, redis and prefixes came from env vars and can't be edited here
+  from_env: boolean;
 };
