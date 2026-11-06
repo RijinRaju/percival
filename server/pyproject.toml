@@ -17,7 +17,8 @@ dependencies = [
     "alembic>=1.13",
     "argon2-cffi>=23.1",
     "cryptography>=42",
-    "celery>=5.3",
+    # the panel always talks to redis, and kombu's redis transport needs the extra
+    "celery[redis]>=5.3",
     "celery-redbeat>=2.0",
     "redis>=4.5",
 ]
