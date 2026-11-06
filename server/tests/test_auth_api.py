@@ -7,9 +7,9 @@ from .conftest import ADMIN, do_setup
 
 
 def test_setup_once_then_closed(client):
-    assert client.get("/api/v1/setup").json() == {"needs_setup": True}
+    assert client.get("/api/v1/setup").json()["needs_setup"] is True
     do_setup(client)
-    assert client.get("/api/v1/setup").json() == {"needs_setup": False}
+    assert client.get("/api/v1/setup").json()["needs_setup"] is False
 
     again = client.post(
         "/api/v1/setup",

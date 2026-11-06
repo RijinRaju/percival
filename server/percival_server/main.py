@@ -12,6 +12,7 @@ from percival_server import __version__
 from percival_server.api import accounts, auth, cluster, history, schedules, setup
 from percival_server.api.auth import LoginLimits
 from percival_server.auth.deps import Principal, require_user
+from percival_server.bootstrap import apply_env_connections, ensure_admin
 from percival_server.config import ServerConfig
 from percival_server.connections import Connections, NotConfigured, RedisFactory
 from percival_server.consumer import EventConsumer
@@ -55,6 +56,8 @@ def create_app(
     app.state.connections = Connections(app.state.secrets, redis_factory)
     with app.state.sessionmaker() as db:
         app.state.connections.load(db)
+        apply_env_connections(config, app.state.connections)
+        ensure_admin(config, db)
 
     api = APIRouter(prefix="/api/v1")
     api.include_router(setup.router)

@@ -19,7 +19,7 @@ from percival_server.auth.security import (
     password_problem,
     verify_password,
 )
-from percival_server.connections import ConnectionSettings
+from percival_server.connections import ENV_FIELDS, ConnectionSettings
 from percival_server.db import get_db
 from percival_server.models import ApiToken, User
 from percival_server.models import Session as UserSession
@@ -201,8 +201,8 @@ class ConnectionsIn(BaseModel):
 
 @router.get("/settings/connections")
 def get_connections(request: Request, _: Principal = Depends(require_user)) -> dict[str, object]:
-    masked: dict[str, object] = request.app.state.connections.settings.masked()
-    return masked
+    conns = request.app.state.connections
+    return {**conns.settings.masked(), "from_env": conns.from_env}
 
 
 @router.put("/settings/connections")
@@ -215,8 +215,14 @@ def update_connections(
     conns = request.app.state.connections
     current: ConnectionSettings = conns.settings
     changes = body.model_dump(exclude_none=True)
+    locked = sorted(set(changes) & ENV_FIELDS) if conns.from_env else []
+    if locked:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"{', '.join(locked)} come from environment variables, change them there",
+        )
     updated = ConnectionSettings(**{**current.__dict__, **changes})
     conns.save(db, updated)
     audit.record(db, who, "settings.update", before=current.masked(), after=updated.masked())
     db.commit()
-    return updated.masked()
+    return {**updated.masked(), "from_env": conns.from_env}

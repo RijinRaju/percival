@@ -31,6 +31,8 @@ def needs_setup(db: Session) -> bool:
 
 class SetupStatus(BaseModel):
     needs_setup: bool
+    # the wizard then only asks for the admin account
+    connections_from_env: bool = False
 
 
 class ConnectionTest(BaseModel):
@@ -46,15 +48,19 @@ class TestResult(BaseModel):
 class SetupRequest(BaseModel):
     username: str = Field(min_length=1, max_length=150)
     password: str
-    broker_url: str = Field(min_length=3, max_length=2000)
-    redis_url: str = Field(min_length=3, max_length=2000)
+    # optional when the server got them from env vars
+    broker_url: str | None = Field(default=None, min_length=3, max_length=2000)
+    redis_url: str | None = Field(default=None, min_length=3, max_length=2000)
     redbeat_key_prefix: str = Field(default="redbeat:", max_length=100)
     key_prefix: str = Field(default=NAME, max_length=100)
 
 
 @router.get("", response_model=SetupStatus)
-def status_(db: Session = Depends(get_db)) -> SetupStatus:
-    return SetupStatus(needs_setup=needs_setup(db))
+def status_(request: Request, db: Session = Depends(get_db)) -> SetupStatus:
+    return SetupStatus(
+        needs_setup=needs_setup(db),
+        connections_from_env=request.app.state.connections.from_env,
+    )
 
 
 @router.post("/test", response_model=TestResult)
@@ -81,17 +87,25 @@ def complete(
     if problem:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, problem)
 
+    conns = request.app.state.connections
+    if conns.from_env:
+        settings = conns.settings
+    elif body.broker_url and body.redis_url:
+        settings = ConnectionSettings(
+            broker_url=body.broker_url.strip(),
+            redis_url=body.redis_url.strip(),
+            redbeat_key_prefix=body.redbeat_key_prefix,
+            key_prefix=body.key_prefix,
+        )
+    else:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "broker_url and redis_url are needed"
+        )
+
     user = User(username=body.username.strip(), password_hash=hash_password(body.password))
     db.add(user)
     db.flush()
-
-    settings = ConnectionSettings(
-        broker_url=body.broker_url.strip(),
-        redis_url=body.redis_url.strip(),
-        redbeat_key_prefix=body.redbeat_key_prefix,
-        key_prefix=body.key_prefix,
-    )
-    request.app.state.connections.save(db, settings)
+    conns.save(db, settings)
 
     who = Principal(
         name=user.username, kind="user", source="ui", user_id=user.id, scopes=set(ALL_SCOPES)

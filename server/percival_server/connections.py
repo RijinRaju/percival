@@ -1,4 +1,4 @@
-"""The user's broker and redis, as entered in the setup wizard.
+"""The user's broker and redis, from the setup wizard or from env vars.
 
 URLs often carry passwords, so they're stored encrypted and masked whenever
 they're shown back.
@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import threading
 from collections.abc import Callable
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
@@ -21,6 +21,7 @@ from percival_server.crypto import SecretBox
 from percival_server.models import Setting
 
 SECRET_FIELDS = {"broker_url", "redis_url"}
+ENV_FIELDS = {"broker_url", "redis_url", "redbeat_key_prefix", "key_prefix"}
 DEFAULT_RETENTION_DAYS = 30
 
 # (url, decode_responses) -> client. redbeat wants decoded strings, we mostly want bytes
@@ -68,6 +69,8 @@ class Connections:
         self._settings: ConnectionSettings | None = None
         self._redis: redis.Redis | None = None
         self._celery: Celery | None = None
+        # broker/redis/prefixes came from env vars, the db only holds the rest
+        self.from_env = False
 
     # storage
 
@@ -88,8 +91,31 @@ class Connections:
         self._use(settings)
         return settings
 
+    def use_env(
+        self,
+        broker_url: str,
+        redis_url: str,
+        redbeat_key_prefix: str | None = None,
+        key_prefix: str | None = None,
+    ) -> ConnectionSettings:
+        base = self._settings or ConnectionSettings(broker_url=broker_url, redis_url=redis_url)
+        settings = replace(
+            base,
+            broker_url=broker_url,
+            redis_url=redis_url,
+            redbeat_key_prefix=redbeat_key_prefix or base.redbeat_key_prefix,
+            key_prefix=key_prefix or base.key_prefix,
+        )
+        self.from_env = True
+        self._use(settings)
+        return settings
+
     def save(self, db: Session, settings: ConnectionSettings) -> None:
-        for key, value in asdict(settings).items():
+        values = asdict(settings)
+        if self.from_env:
+            # urls stay in the environment, never copied into the db
+            values = {k: v for k, v in values.items() if k not in ENV_FIELDS}
+        for key, value in values.items():
             encrypted = key in SECRET_FIELDS
             stored = self._box.encrypt(str(value)) if encrypted else str(value)
             row = db.get(Setting, key)
