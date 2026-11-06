@@ -1,0 +1,72 @@
+# Everything percival does, without touching your own code:
+#
+#   cd demo && docker compose up
+#
+# then open http://localhost:8080 and log in as demo / percival-demo.
+#
+# Two workers run different versions of the same app. Most schedules
+# require the newer one, so you'll see the old worker refuse them and the
+# new one pick them up.
+
+x-shop: &shop
+  build:
+    context: ..
+    dockerfile: demo/Dockerfile
+  image: percival-demo-shop
+  environment: &shop-env
+    REDIS_URL: redis://redis:6379/0
+  depends_on:
+    seed:
+      condition: service_completed_successfully
+
+services:
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      retries: 15
+
+  seed:
+    <<: *shop
+    command: python shop.py seed
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  worker-old:
+    <<: *shop
+    command: celery -A shop worker -n old@shop -l info --concurrency 2
+    environment:
+      <<: *shop-env
+      GIT_SHA: a1b2c3d
+
+  worker-new:
+    <<: *shop
+    command: celery -A shop worker -n new@shop -l info --concurrency 2
+    environment:
+      <<: *shop-env
+      GIT_SHA: e4f5a6b
+
+  beat:
+    <<: *shop
+    command: celery -A shop beat -S percival.beat.Scheduler -l info
+    environment:
+      <<: *shop-env
+      GIT_SHA: e4f5a6b
+
+  panel:
+    build:
+      context: ..
+    image: percival-demo-panel
+    ports:
+      - "8080:8080"
+    environment:
+      PERCIVAL_REDIS_URL: redis://redis:6379/0
+      PERCIVAL_ADMIN_USERNAME: demo
+      PERCIVAL_ADMIN_PASSWORD: percival-demo
+      # plain http on localhost
+      PERCIVAL_SECURE_COOKIES: "0"
+    depends_on:
+      redis:
+        condition: service_healthy
