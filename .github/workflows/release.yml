@@ -1,0 +1,45 @@
+name: release
+
+# tag v* -> both packages on pypi. uses trusted publishing, so each project
+# needs this repo + workflow added as a publisher on pypi.org first.
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # the server wheel carries the built ui
+      - run: npm ci && npm run build
+        working-directory: web
+      - run: pip install build
+      - run: python -m build client --outdir dist
+      - run: python -m build server --outdir dist
+      - run: test -f server/percival_server/static/index.html
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  pypi:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
