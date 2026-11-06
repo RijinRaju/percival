@@ -11,6 +11,7 @@ requires-python = ">=3.10"
 authors = [{ name = "Rijin Raju" }]
 dependencies = [
     "celery>=5.3",
+    "celery-redbeat>=2.0",
     "redis>=4.5",
 ]
 dynamic = ["version"]
@@ -25,12 +26,11 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-# only needed for `percival import`, workers don't need redbeat
-import = ["celery-redbeat>=2.0"]
+# kept so `pip install "percival[import]"` from older docs still works
+import = []
 dev = [
     "pytest>=8",
     "fakeredis>=2.20",
-    "celery-redbeat>=2.0",
     "ruff>=0.5",
     "mypy>=1.10",
 ]
