@@ -4,9 +4,60 @@ A self-hosted control panel for Celery. Change schedules without restarting
 beat or workers, and stop the two things ping monitors can't see: a task
 running twice, and a stale worker running old code.
 
-> Early days. The client library and the panel (API + web UI) work and are
-> tested. The MCP server and the Docker image are next. Expect breaking
-> changes until 0.1.
+## Quickstart
+
+If you already run Celery with Redis, it's three commands and a few lines of
+code. Your tasks stay where they are; Percival only decides when they run and
+shows you what happened.
+
+```
+pip install percival
+```
+
+```python
+# proj/celery.py, right after app = Celery(...)
+import os, percival
+percival.init(
+    app,
+    redis_url="redis://localhost:6379/0",
+    code_version=os.environ.get("GIT_SHA", "dev"),  # whatever identifies a deploy
+)
+```
+
+```
+celery -A proj beat -S percival.beat.Scheduler
+docker run -d -p 8080:8080 -v percival:/data \
+  -e PERCIVAL_REDIS_URL=redis://host.docker.internal:6379/0 \
+  -e PERCIVAL_ADMIN_PASSWORD=pick-a-long-one \
+  ghcr.io/rijinraju/percival
+```
+
+Restart your workers, open http://localhost:8080 and log in as `admin`. Your
+tasks show up under Tasks; pick one and give it a schedule. Already have a
+`beat_schedule`? Press **import** on the board.
+
+`host.docker.internal` is how a container reaches Redis on your own machine
+(Docker Desktop). On a server, use the Redis hostname your workers use. If
+your broker is RabbitMQ, also pass `PERCIVAL_BROKER_URL`.
+
+### Just want to see it?
+
+```
+git clone https://github.com/RijinRaju/percival && cd percival/demo
+docker compose up
+```
+
+Open http://localhost:8080 and log in as `demo` / `percival-demo`. It runs
+Redis, beat, the panel and two workers on different versions of a small shop
+app. Within a minute you'll see the old worker refuse tasks meant for the new
+one, duplicate digests being skipped, a flaky task failing with its API token
+redacted, and a crontab that runs at 9:00 India time. `docker compose down`
+throws it all away.
+
+> Early days. Expect breaking changes until 0.1. Until the first release is
+> tagged, install the client with
+> `pip install "git+https://github.com/RijinRaju/percival#subdirectory=client"`
+> and build the image with `docker build -t percival .` from a checkout.
 
 ## Why I built this
 
@@ -88,9 +139,10 @@ The second run for the same key in the same window is skipped and recorded as
 ### Importing an existing beat_schedule
 
 ```
-pip install "percival[import]"
 percival import --app proj.celery:app --redis-url redis://localhost:6379/0
 ```
+
+(Or press **import** on the board, which lists what your workers published.)
 
 This is a dry run that prints what would be created or changed. Add `--apply`
 to write the entries to RedBeat, then run beat with
@@ -116,25 +168,39 @@ writes. You just lose the three things above.
 
 ## The panel
 
-Docker image is coming. Until then, from a checkout:
+The panel is one container, configured the way you'd configure Flower: with
+environment variables.
+
+```
+docker run -d -p 8080:8080 -v percival:/data \
+  -e PERCIVAL_REDIS_URL=redis://redis:6379/0 \
+  -e PERCIVAL_ADMIN_PASSWORD=pick-a-long-one \
+  ghcr.io/rijinraju/percival
+```
+
+Everything is optional. Leave out the URLs or the admin and the first visit
+asks for them instead (connections entered there are stored encrypted).
+
+| env | default | |
+|---|---|---|
+| `PERCIVAL_REDIS_URL` | none | where RedBeat and `percival.init()` keep their keys |
+| `PERCIVAL_BROKER_URL` | the Redis URL | needed when the broker isn't Redis; `CELERY_BROKER_URL` works too |
+| `PERCIVAL_ADMIN_USERNAME` / `PERCIVAL_ADMIN_PASSWORD` | `admin` / none | creates the first admin on startup, only if nobody exists yet |
+| `PERCIVAL_SECRET_KEY` | generated into `/data/secret_key` | set it yourself if `/data` isn't somewhere you trust |
+| `PERCIVAL_DATABASE_URL` | SQLite in `/data` | Postgres works too |
+| `PERCIVAL_REDBEAT_KEY_PREFIX` / `PERCIVAL_KEY_PREFIX` | `redbeat:` / `percival` | only if you changed them in your Celery config |
+| `PERCIVAL_SECURE_COOKIES` | on | turn off only for plain http on localhost |
+
+Keep `/data` on a volume: it holds users, run history and the generated key.
+The schedules themselves live in Redis, so turn on Redis persistence.
+
+Without Docker, from a checkout:
 
 ```
 cd web && npm ci && npm run build && cd ..
 pip install -e client -e server
-PERCIVAL_SECRET_KEY=$(python -c "import secrets; print(secrets.token_urlsafe(48))")   percival-server
+percival-server
 ```
-
-Open http://127.0.0.1:8080. The first visit walks you through creating an
-admin and pointing it at your broker and Redis. Keep the secret key somewhere
-safe: it encrypts the stored connection URLs, and the server refuses to start
-without it unless `PERCIVAL_ENV=development`.
-
-| env | default | |
-|---|---|---|
-| `PERCIVAL_SECRET_KEY` | none | required in production |
-| `PERCIVAL_DATABASE_URL` | SQLite in `./data` | Postgres works too |
-| `PERCIVAL_HOST` / `PERCIVAL_PORT` | `127.0.0.1` / `8080` | |
-| `PERCIVAL_SECURE_COOKIES` | on in production | turn off only for plain http on localhost |
 
 Put it behind a reverse proxy with TLS if anyone besides you will reach it.
 API docs are at `/api/docs` once you're logged in.
@@ -163,8 +229,9 @@ is blocked on that worker. That's on purpose.
 - [x] per-schedule timezones (`percival.beat.Scheduler`)
 - [x] server: API, auth, schedules on top of RedBeat, run history, audit log
 - [x] web UI
+- [x] Docker image and a demo compose stack
+- [ ] first release on PyPI and ghcr.io
 - [ ] MCP server (read-only by default, writes need human approval)
-- [ ] Docker image and a demo compose stack
 
 ## Development
 
