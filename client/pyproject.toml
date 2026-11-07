@@ -16,6 +16,7 @@ dependencies = [
 ]
 dynamic = ["version"]
 classifiers = [
+    "Development Status :: 3 - Alpha",
     "Framework :: Celery",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
@@ -39,7 +40,9 @@ dev = [
 percival = "percival.cli:main"
 
 [project.urls]
+Homepage = "https://github.com/RijinRaju/percival"
 Source = "https://github.com/RijinRaju/percival"
+Issues = "https://github.com/RijinRaju/percival/issues"
 
 [tool.hatch.version]
 path = "percival/__init__.py"
