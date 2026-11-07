@@ -44,7 +44,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/RijinRaju/percival"
+Homepage = "https://percivalhq.dev"
+Documentation = "https://percivalhq.dev"
 Source = "https://github.com/RijinRaju/percival"
 Issues = "https://github.com/RijinRaju/percival/issues"
 

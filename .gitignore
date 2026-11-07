@@ -28,3 +28,4 @@ web/dist/
 
 # built ui, produced by `npm run build` in web/ (and by the docker build)
 server/percival_server/static/
+site/

@@ -4,6 +4,8 @@ A self-hosted control panel for Celery. Change schedules without restarting
 beat or workers, and stop the two things ping monitors can't see: a task
 running twice, and a stale worker running old code.
 
+Docs: https://percivalhq.dev
+
 ## Quickstart
 
 If you already run Celery with Redis, it's three commands and a few lines of

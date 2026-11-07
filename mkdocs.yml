@@ -1,0 +1,59 @@
+site_name: Percival
+site_url: https://percivalhq.dev/
+site_description: >-
+  Self-hosted control panel for Celery. Change Celery beat schedules without
+  restarts, and stop duplicate runs and stale workers running old code.
+site_author: Rijin Raju
+repo_url: https://github.com/RijinRaju/percival
+repo_name: RijinRaju/percival
+edit_uri: edit/main/docs/
+copyright: MIT licensed
+
+theme:
+  name: material
+  font:
+    text: IBM Plex Sans
+    code: IBM Plex Mono
+  features:
+    - navigation.sections
+    - navigation.footer
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - Guide:
+      - In your Celery project: guide/client.md
+      - Running beat: guide/beat.md
+      - Moving an existing beat_schedule: guide/import.md
+      - Self-hosting the panel: guide/panel.md
+  - How it compares: compare.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+plugins:
+  - search
