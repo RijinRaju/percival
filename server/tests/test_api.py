@@ -20,6 +20,11 @@ DIGEST = {
 }
 
 
+def parse_utc(value):
+    # python 3.10's fromisoformat doesn't take the trailing Z
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
 @pytest.fixture
 def redis(app):
     return app.state.connections.redis()
@@ -114,7 +119,7 @@ def test_preview(client, admin):
         "/api/v1/schedules/preview",
         json={"schedule": {"type": "crontab", "minute": "*/15"}, "count": 3},
     )
-    runs = [datetime.fromisoformat(r) for r in resp.json()]
+    runs = [parse_utc(r) for r in resp.json()]
     assert len(runs) == 3
     assert all(r.minute % 15 == 0 for r in runs)
 
@@ -319,8 +324,8 @@ def test_endpoints_before_setup(client):
 def test_datetimes_are_utc_iso(client, admin):
     client.post("/api/v1/schedules", json=DIGEST)
     first = client.get("/api/v1/schedules/digest").json()["next_runs"][0]
-    assert datetime.fromisoformat(first).tzinfo is not None
-    assert datetime.fromisoformat(first).utcoffset() == timezone.utc.utcoffset(None)
+    assert parse_utc(first).tzinfo is not None
+    assert parse_utc(first).utcoffset() == timezone.utc.utcoffset(None)
 
 
 def test_edit_works_as_the_first_redbeat_call(app, config, redis_server, admin, client):
