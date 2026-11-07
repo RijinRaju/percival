@@ -65,6 +65,18 @@ class zoned_crontab(crontab):  # type: ignore[misc]
             return super().remaining_delta(last_run_at, tz)
         return super().remaining_delta(last_run_at, tz, ffwd)
 
+    def remaining_estimate(self, last_run_at: datetime, ffwd: Any = None) -> timedelta:
+        # same as celery >= 5.5. older versions subtract two datetimes in the
+        # same zone, which python does in wall clock time, so a 9:00 London
+        # run lands at 8:00 the week the clocks go back
+        if ffwd is None:
+            start, ends_in, now = self.remaining_delta(last_run_at)
+        else:
+            start, ends_in, now = self.remaining_delta(last_run_at, ffwd=ffwd)
+        end: datetime = start + ends_in
+        current: datetime = now
+        return end.astimezone(timezone.utc) - current.astimezone(timezone.utc)
+
     def __reduce__(self) -> Any:
         return (
             _rebuild_zoned,
