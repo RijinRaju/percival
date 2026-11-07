@@ -1,3 +1,10 @@
+<p>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="brand/percival-tile-dark.svg">
+    <img src="brand/percival-tile.svg" width="72" height="72" alt="Percival logo">
+  </picture>
+</p>
+
 # Percival
 
 A self-hosted control panel for Celery. Change schedules without restarting

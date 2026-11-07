@@ -3,8 +3,10 @@
   --md-default-bg-color: #f3f0e8;
   --md-default-fg-color: #1b1a17;
   --md-default-fg-color--light: #1b1a17b3;
-  --md-primary-fg-color: #1b1a17;
-  --md-primary-bg-color: #f3f0e8;
+  /* header is paper with an ink rule, like the panel */
+  --md-primary-fg-color: #f3f0e8;
+  --md-primary-bg-color: #1b1a17;
+  --md-primary-bg-color--light: #1b1a17b3;
   --md-accent-fg-color: #c23b16;
   --md-typeset-a-color: #c23b16;
   --md-code-bg-color: #e9e4d8;
@@ -15,6 +17,8 @@
   --md-default-fg-color: #ebe6d9;
   --md-default-fg-color--light: #ebe6d9b3;
   --md-primary-fg-color: #14130f;
+  --md-primary-bg-color: #ebe6d9;
+  --md-primary-bg-color--light: #ebe6d9b3;
   --md-accent-fg-color: #ff6b3d;
   --md-typeset-a-color: #ff6b3d;
   --md-code-bg-color: #1f1d18;
@@ -26,3 +30,8 @@
 .md-typeset h2 { font-weight: 600; border-top: 1px solid #d6d0c2; padding-top: 1.2em; }
 [data-md-color-scheme="slate"] .md-typeset h2 { border-top-color: #34312a; }
 .md-typeset table:not([class]) { font-size: 0.72rem; }
+
+.md-header__button.md-logo img { width: 1.6rem; height: 1.6rem; }
+[data-md-color-scheme="slate"] .md-logo img { content: url("../assets/percival-tile-dark.svg"); }
+[data-md-color-scheme="default"] .md-search__form { background-color: #e9e4d8; }
+[data-md-color-primary="black"] .md-header { background-color: var(--md-primary-fg-color); color: var(--md-primary-bg-color); }

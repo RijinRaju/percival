@@ -1,3 +1,5 @@
+<img src="https://raw.githubusercontent.com/RijinRaju/percival/main/brand/percival-tile.png" width="72" height="72" alt="Percival logo">
+
 # percival
 
 The client half of [Percival](https://github.com/RijinRaju/percival), a
