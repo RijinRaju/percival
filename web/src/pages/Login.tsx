@@ -4,13 +4,17 @@ import { api } from "../api";
 import { safeNext, useSession } from "../session";
 import type { Me } from "../types";
 import { Button, ErrorLine, Field, Input } from "../ui";
+import tileDark from "../assets/percival-tile-dark.svg";
+import tileLight from "../assets/percival-tile.svg";
 
 export function Wordmark({ small }: { small?: boolean }) {
+  const size = small ? "h-5 w-5" : "h-7 w-7";
   return (
     <span className={`inline-flex items-center gap-2 font-mono font-semibold tracking-tight ${small ? "text-sm" : "text-lg"}`}>
-      <span aria-hidden className="relative inline-block h-3.5 w-3.5 bg-ink">
-        <span className="absolute inset-[4px] bg-signal" />
-      </span>
+      <picture className="shrink-0">
+        <source srcSet={tileDark} media="(prefers-color-scheme: dark)" />
+        <img src={tileLight} alt="" className={`block ${size}`} />
+      </picture>
       percival
     </span>
   );
