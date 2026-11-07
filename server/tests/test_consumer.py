@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from percival_server.connections import ConnectionSettings
 from percival_server.consumer import EventConsumer, apply_events, cleanup
-from percival_server.live import queue_coverage, version_summary
+from percival_server.live import expected_version, queue_coverage, version_summary
 from percival_server.models import Run, WorkerSeen
 
 
@@ -120,6 +120,23 @@ def test_version_summary_flags_the_old_ones():
     assert summary["versions"][1]["stale"] is True
 
     assert version_summary([w("a", "v1", 1)])["mismatch"] is False
+
+
+def test_version_summary_trusts_the_deploy_over_start_times():
+    # the old worker restarted last, which used to make it look current
+    workers = [w("new", "v2", 1), w("old", "v1", 5)]
+    assert version_summary(workers)["current"] == "v1"
+    summary = version_summary(workers, expected="v2")
+    assert summary["current"] == "v2"
+    assert [v["version"] for v in summary["versions"] if v["stale"]] == ["v1"]
+    # nobody runs the expected version yet: fall back to the guess
+    assert version_summary(workers, expected="v3")["current"] == "v1"
+
+
+def test_expected_version():
+    assert expected_version(["v2", "v2", None, "v1"], {"code_version": "v9"}) == "v2"
+    assert expected_version([None], {"code_version": "v9"}) == "v9"
+    assert expected_version([], None) is None
 
 
 def test_queue_coverage():

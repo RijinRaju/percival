@@ -4,6 +4,7 @@ beat heartbeat, and the task metadata workers publish on start."""
 from __future__ import annotations
 
 import json
+from collections import Counter
 from datetime import datetime, timezone
 from typing import Any
 
@@ -51,21 +52,29 @@ def remember_workers(db: Session, workers: list[dict[str, Any]]) -> None:
         row.last_seen = w.get("last_seen") or datetime.now(timezone.utc)
 
 
-def version_summary(workers: list[dict[str, Any]]) -> dict[str, Any]:
+def version_summary(workers: list[dict[str, Any]], expected: str | None = None) -> dict[str, Any]:
     """Which version is current and who's behind.
 
-    "Current" is whatever the most recently started live worker runs. That's
-    a guess, but during a rollout it's the right one: new pods come up on the
-    new version while old ones are still draining.
+    ``expected`` is the version the deploy says should be running (what the
+    schedules are gated on, or what beat runs). When some live worker has it,
+    that's current. Otherwise fall back to whatever the most recently started
+    worker runs: a guess, but during a rollout new pods come up on the new
+    version while old ones are still draining. A restarted old worker would
+    fool the guess, which is why ``expected`` wins when we have it.
     """
     alive = [w for w in workers if w.get("alive")]
     if not alive:
         return {"current": None, "versions": [], "mismatch": False}
 
-    newest = max(
-        alive, key=lambda w: w.get("started_at") or datetime.min.replace(tzinfo=timezone.utc)
-    )
-    current = newest.get("code_version")
+    running = {w.get("code_version") for w in alive}
+    if expected and expected in running:
+        current: str | None = expected
+    else:
+        newest = max(
+            alive,
+            key=lambda w: w.get("started_at") or datetime.min.replace(tzinfo=timezone.utc),
+        )
+        current = newest.get("code_version")
     groups: dict[str, list[str]] = {}
     for w in alive:
         groups.setdefault(w.get("code_version") or "unknown", []).append(w["hostname"])
@@ -92,6 +101,16 @@ def queue_coverage(
         "matching": len(matching),
         "stale": len(consumers) - len(matching),
     }
+
+
+def expected_version(required: list[str | None], beat: dict[str, Any] | None) -> str | None:
+    """The version the deploy wants: the one most schedules are gated on, else beat's."""
+    counts = Counter(v for v in required if v)
+    if counts:
+        return counts.most_common(1)[0][0]
+    if beat and beat.get("code_version"):
+        return str(beat["code_version"])
+    return None
 
 
 def read_beat(conns: Connections) -> dict[str, Any] | None:

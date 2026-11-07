@@ -52,10 +52,22 @@ def all_workers(conns: Connections, db: Session) -> list[dict[str, Any]]:
 def workers(
     request: Request, db: Session = Depends(get_db), _: Principal = Depends(require_read)
 ) -> dict[str, Any]:
-    everyone = all_workers(_conns(request), db)
+    conns = _conns(request)
+    everyone = all_workers(conns, db)
     for w in everyone:
         w.pop("tasks", None)  # can be long, /tasks has it
-    return {"workers": everyone, "versions": live.version_summary(everyone)}
+    return {
+        "workers": everyone,
+        "versions": live.version_summary(everyone, _expected_version(conns)),
+    }
+
+
+def _expected_version(conns: Connections) -> str | None:
+    required = [
+        store.serialize(entry, count=0)["required_version"]
+        for entry in store.list_entries(conns.celery())
+    ]
+    return live.expected_version(required, live.read_beat(conns))
 
 
 @router.get("/status")
@@ -65,7 +77,7 @@ def overview(
     """Everything the header bar needs in one request."""
     conns = _conns(request)
     workers = live.read_workers(conns)
-    versions = live.version_summary(workers)
+    versions = live.version_summary(workers, _expected_version(conns))
 
     affected = []
     if versions["mismatch"]:
