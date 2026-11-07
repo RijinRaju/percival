@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 from percival.config import UNKNOWN_VERSION, Settings
 from percival.dedupe import once_per
