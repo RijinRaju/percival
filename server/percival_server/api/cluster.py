@@ -98,11 +98,10 @@ def overview(
                 )
 
     since = datetime.now(timezone.utc) - timedelta(hours=24)
-    counts = dict(
-        db.execute(
-            select(Run.status, func.count()).where(Run.ts >= since).group_by(Run.status)
-        ).all()
-    )
+    rows = db.execute(
+        select(Run.status, func.count()).where(Run.ts >= since).group_by(Run.status)
+    ).all()
+    counts: dict[str, int] = {status: n for status, n in rows}
     return {
         "beat": live.read_beat(conns),
         "lock": live.read_lock(conns),
