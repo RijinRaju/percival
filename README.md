@@ -54,10 +54,8 @@ one, duplicate digests being skipped, a flaky task failing with its API token
 redacted, and a crontab that runs at 9:00 India time. `docker compose down`
 throws it all away.
 
-> Early days. Expect breaking changes until 0.1. Until the first release is
-> tagged, install the client with
-> `pip install "git+https://github.com/RijinRaju/percival#subdirectory=client"`
-> and build the image with `docker build -t percival .` from a checkout.
+> Early days. Until 1.0, expect breaking changes between minor versions
+> (0.1 to 0.2). Pin the version you use.
 
 ## Why I built this
 
@@ -230,7 +228,7 @@ is blocked on that worker. That's on purpose.
 - [x] server: API, auth, schedules on top of RedBeat, run history, audit log
 - [x] web UI
 - [x] Docker image and a demo compose stack
-- [ ] first release on PyPI and ghcr.io
+- [x] first release on PyPI and ghcr.io
 - [ ] MCP server (read-only by default, writes need human approval)
 
 ## Development
