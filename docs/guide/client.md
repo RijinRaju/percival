@@ -54,7 +54,7 @@ can pick it up. It's recorded as `blocked_stale_worker`.
 image tag. Workers from the same deploy must report the same value.
 
 If you leave it at `unknown`, any schedule that requires a version is blocked
-on that worker. That's on purpose.
+on that worker, since there's no way to tell it's current.
 
 ## Stopping duplicate runs
 

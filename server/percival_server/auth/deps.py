@@ -3,7 +3,7 @@
 Two ways in:
 - browser: session cookie, plus an X-CSRF-Token header on anything that
   changes state (the token comes from /auth/me)
-- scripts / MCP: ``Authorization: Bearer perc_...`` with read/write scopes
+- scripts: ``Authorization: Bearer perc_...`` with read/write scopes
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ READ = "read"
 WRITE = "write"
 ALL_SCOPES = (READ, WRITE)
 
-Source = Literal["ui", "api", "mcp"]
+Source = Literal["ui", "api"]
 
 
 @dataclass
@@ -62,11 +62,10 @@ def _from_token(request: Request, db: Session, raw: str) -> Principal:
         token.last_used_at = now
         db.commit()
 
-    source: Source = "mcp" if request.url.path.startswith("/mcp") else "api"
     return Principal(
         name=token.name,
         kind="token",
-        source=source,
+        source="api",
         token_id=token.id,
         scopes=token.scope_set,
     )

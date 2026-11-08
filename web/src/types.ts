@@ -144,7 +144,7 @@ export type AuditEntry = {
   ts: string;
   actor: string;
   actor_type: string;
-  source: "ui" | "api" | "mcp";
+  source: "ui" | "api";
   action: string;
   target: string | null;
   before: unknown;

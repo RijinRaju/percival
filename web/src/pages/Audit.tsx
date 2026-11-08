@@ -83,7 +83,6 @@ export default function Audit() {
           <option value="">any source</option>
           <option value="ui">ui</option>
           <option value="api">api</option>
-          <option value="mcp">mcp</option>
         </Select>
       </Heading>
       <ErrorLine error={error} />
@@ -113,7 +112,7 @@ export default function Audit() {
                         {e.actor}
                         {e.actor_type === "token" ? <span className="text-ink-3"> (token)</span> : null}
                       </Td>
-                      <Td className={cx("font-mono text-xs", e.source === "mcp" && "text-signal")}>{e.source}</Td>
+                      <Td className={"font-mono text-xs"}>{e.source}</Td>
                       <Td className="font-mono text-xs">{e.action}</Td>
                       <Td className="font-mono text-xs">{target(e)}</Td>
                       <Td className="font-mono text-xs text-ink-2">{hasDiff ? (open === e.id ? "−" : "+") : ""}</Td>

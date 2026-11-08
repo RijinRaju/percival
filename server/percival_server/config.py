@@ -45,9 +45,6 @@ class ServerConfig:
     static_dir: Path | None
     session_hours: int = 24 * 14
     run_consumer: bool = True
-    # mcp write tools, used from M5 on
-    mcp_write_enabled: bool = False
-    mcp_require_approval: bool = True
     # when set, these win over whatever the wizard or /settings saved
     broker_url: str | None = None
     redis_url: str | None = None
@@ -101,8 +98,6 @@ class ServerConfig:
             secure_cookies=_flag("SECURE_COOKIES", env == PRODUCTION),
             static_dir=static_dir if static_dir.exists() else None,
             run_consumer=_flag("RUN_CONSUMER", True),
-            mcp_write_enabled=_flag("MCP_WRITE_ENABLED", False),
-            mcp_require_approval=_flag("MCP_REQUIRE_APPROVAL", True),
             broker_url=conns["broker_url"],
             redis_url=conns["redis_url"],
             redbeat_key_prefix=conns["redbeat_key_prefix"],

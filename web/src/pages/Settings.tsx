@@ -258,7 +258,7 @@ function Tokens() {
         </table>
       ) : null}
       <form onSubmit={create} className="flex flex-wrap items-end gap-4">
-        <Field label="Name" className="w-60" hint="what or who uses it, e.g. claude-code, ci">
+        <Field label="Name" className="w-60" hint="what or who uses it, e.g. deploy-script, ci">
           <Input value={name} onChange={(e) => setName(e.target.value)} required />
         </Field>
         <label className="flex items-center gap-2 pb-6 text-sm">
@@ -302,7 +302,7 @@ export default function Settings() {
       </Section>
       <Section
         title="API tokens"
-        note={<>For scripts and MCP clients. Send as <code className="font-mono">Authorization: Bearer …</code>. Read-only unless you tick write.</>}
+        note={<>For scripts and CI. Send as <code className="font-mono">Authorization: Bearer …</code>. Read-only unless you tick write.</>}
       >
         <Tokens />
       </Section>

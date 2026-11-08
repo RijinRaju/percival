@@ -166,7 +166,7 @@ class AuditLog(Base):
     ts: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, index=True)
     actor: Mapped[str] = mapped_column(String(150))
     actor_type: Mapped[str] = mapped_column(String(20))  # user | token | system
-    source: Mapped[str] = mapped_column(String(10), index=True)  # ui | api | mcp
+    source: Mapped[str] = mapped_column(String(10), index=True)  # ui | api
     action: Mapped[str] = mapped_column(String(50), index=True)
     target: Mapped[str | None] = mapped_column(String(255), index=True)
     before: Mapped[Any] = mapped_column(JSON, nullable=True)

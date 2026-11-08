@@ -21,7 +21,7 @@ UI_HEADERS = {
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "same-origin",
 }
-RESERVED = ("api/", "api", "health", "mcp")
+RESERVED = ("api/", "api", "health")
 
 
 def mount(app: FastAPI, static_dir: Path) -> None:

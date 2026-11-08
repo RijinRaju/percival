@@ -227,18 +227,7 @@ Every option can be passed to `init()` or set as an env var:
 | `dedupe_fail_open` | `PERCIVAL_DEDUPE_FAIL_OPEN` | `false` |
 
 If `code_version` is left at `unknown`, any schedule that requires a version
-is blocked on that worker. That's on purpose.
-
-## Roadmap
-
-- [x] client: events, heartbeat, metadata, version gate, `once_per`
-- [x] `percival import`
-- [x] per-schedule timezones (`percival.beat.Scheduler`)
-- [x] server: API, auth, schedules on top of RedBeat, run history, audit log
-- [x] web UI
-- [x] Docker image and a demo compose stack
-- [x] first release on PyPI and ghcr.io
-- [ ] MCP server (read-only by default, writes need human approval)
+is blocked on that worker, since there's no way to tell it's current.
 
 ## Development
 
