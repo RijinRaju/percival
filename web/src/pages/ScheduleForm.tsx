@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, enc } from "../api";
-import { clock, day, short } from "../format";
+import { clock, day, modernZone, short } from "../format";
 import { useApi } from "../hooks";
 import { useStatus } from "../Shell";
 import type { CronSpec, Schedule, ScheduleSpec, TaskDetail, TaskRow } from "../types";
@@ -31,9 +31,21 @@ const UNITS: [string, number][] = [
   ["days", 86400],
 ];
 
+// formatting with a zone the browser doesn't know throws, and a throw during
+// render blanks the page, so fall back to UTC
+function inZone(t: string, zone: string): string {
+  const opts = { weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false } as const;
+  try {
+    return new Date(t).toLocaleString(undefined, { ...opts, timeZone: zone });
+  } catch {
+    return new Date(t).toLocaleString(undefined, { ...opts, timeZone: "UTC" });
+  }
+}
+
 const ZONES: string[] = (() => {
   try {
-    return ["UTC", ...(Intl as unknown as { supportedValuesOf(k: string): string[] }).supportedValuesOf("timeZone")];
+    const all = (Intl as unknown as { supportedValuesOf(k: string): string[] }).supportedValuesOf("timeZone");
+    return ["UTC", ...Array.from(new Set(all.map(modernZone))).filter((z) => z !== "UTC").sort()];
   } catch {
     return ["UTC"];
   }
@@ -146,7 +158,7 @@ export default function ScheduleForm() {
     every: 5,
     unit: 60,
     at: "",
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+    timezone: modernZone(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"),
     rawArgs: false,
     argsJson: "[]",
     kwargsJson: "{}",
@@ -354,12 +366,13 @@ export default function ScheduleForm() {
 
             {form.kind !== "interval" ? (
               <Field label="Timezone" className="mt-4 max-w-sm" hint="the clock this schedule follows, DST included">
-                <Input list="zones" value={form.timezone} onChange={(e) => set("timezone", e.target.value)} />
-                <datalist id="zones">
-                  {ZONES.map((z) => (
-                    <option key={z} value={z} />
+<Select value={form.timezone} onChange={(e) => set("timezone", e.target.value)}>
+                  {(ZONES.includes(form.timezone) ? ZONES : [form.timezone, ...ZONES]).map((z) => (
+                    <option key={z} value={z}>
+                      {z}
+                    </option>
                   ))}
-                </datalist>
+                </Select>
               </Field>
             ) : null}
           </fieldset>
@@ -479,7 +492,7 @@ export default function ScheduleForm() {
                   </div>
                   {form.kind !== "interval" ? (
                     <div className="text-xs text-ink-2">
-                      {new Date(t).toLocaleString(undefined, { timeZone: form.timezone, weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false })}{" "}
+                      {inZone(t, form.timezone)}{" "}
                       {form.timezone}
                     </div>
                   ) : null}

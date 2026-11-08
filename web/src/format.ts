@@ -1,7 +1,24 @@
 // Times are shown in the viewer's local zone, with the zone named, because
 // "09:00" on its own is exactly the kind of ambiguity that bit us.
 
-const localZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+// chrome and edge still list some zones by their old names. show the names
+// people search for; python accepts both, so saved schedules keep working
+const RENAMED: Record<string, string> = {
+  "Asia/Calcutta": "Asia/Kolkata",
+  "Asia/Katmandu": "Asia/Kathmandu",
+  "Asia/Rangoon": "Asia/Yangon",
+  "Asia/Saigon": "Asia/Ho_Chi_Minh",
+  "Europe/Kiev": "Europe/Kyiv",
+  "America/Godthab": "America/Nuuk",
+  "Atlantic/Faeroe": "Atlantic/Faroe",
+  "Pacific/Enderbury": "Pacific/Kanton",
+};
+
+export function modernZone(zone: string): string {
+  return RENAMED[zone] ?? zone;
+}
+
+const localZone = modernZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
 export function zoneLabel(): string {
   return localZone;
